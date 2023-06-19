@@ -27,7 +27,7 @@ In this case, however, we reveal it prematurely.
 
 The culprit seems to be [this](https://i.imgur.com/DOkewuj.png) block of code in `RemoteMediatorAccessImpl#launchRefresh`.
 Please note that for this particular query `isEndOfPaginationReached` flag in `GithubRemoteMediator` is true, the logic for which differs from the original logic provided in this codelab example.
-Originally, the logic was to check `repos.isEmpty()` which was wrong.
+Originally, the logic was to check `repos.isEmpty()` but the more appropriate check is `repos.size < pageSize`.
 
 With that established, the codeblock in the screen shot above ends up setting all 3 LoadTypes to `COMPLETED` block state. This happens **before** paging source invalidation and therefore the paging data gets emitted **after** the load state update leading to the Ui state we saw above. 
 
