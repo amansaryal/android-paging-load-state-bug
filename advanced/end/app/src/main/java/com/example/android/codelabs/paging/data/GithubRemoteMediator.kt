@@ -88,7 +88,7 @@ class GithubRemoteMediator(
             val apiResponse = service.searchRepos(apiQuery, page, state.config.pageSize)
 
             val repos = apiResponse.items
-            val endOfPaginationReached = repos.isEmpty()
+            val endOfPaginationReached = repos.size < state.config.pageSize
             repoDatabase.withTransaction {
                 // clear all tables in the database
                 if (loadType == LoadType.REFRESH) {

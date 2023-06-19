@@ -16,6 +16,7 @@
 
 package com.example.android.codelabs.paging.ui
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -25,18 +26,7 @@ import androidx.paging.insertSeparators
 import androidx.paging.map
 import com.example.android.codelabs.paging.data.GithubRepository
 import com.example.android.codelabs.paging.model.Repo
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -81,6 +71,12 @@ class SearchRepositoriesViewModel(
             .onStart { emit(UiAction.Scroll(currentQuery = lastQueryScrolled)) }
 
         pagingDataFlow = searches
+            .onEach {
+                Log.d("Paging", """
+                    ------------------------ Query ------------------------
+                    ${it.query}                
+                """.trimIndent())
+            }
             .flatMapLatest { searchRepo(queryString = it.query) }
             .cachedIn(viewModelScope)
 

@@ -17,6 +17,7 @@
 package com.example.android.codelabs.paging.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
@@ -24,19 +25,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
+import androidx.paging.LoadStates
 import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.codelabs.paging.Injection
 import com.example.android.codelabs.paging.databinding.ActivitySearchRepositoriesBinding
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class SearchRepositoriesActivity : AppCompatActivity() {
@@ -148,6 +145,17 @@ class SearchRepositoriesActivity : AppCompatActivity() {
             }
         })
         val notLoading = repoAdapter.loadStateFlow
+            .onEach {
+                Log.d("Paging", """
+                    ------------------------ Load State Received (adapterItemCount: ${repoAdapter.itemCount} | isLoading: {${it.isLoading}})------------------------
+                    source.refresh: ${it.source.refresh}
+                    source.append: ${it.source.append}
+                    source.prepend: ${it.source.prepend}
+                    mediator.refresh: ${it.mediator?.refresh}
+                    mediator.append: ${it.mediator?.append}
+                    mediator.prepend: ${it.mediator?.prepend}     
+                """.trimIndent())
+            }
             .asRemotePresentationState()
             .map { it == RemotePresentationState.PRESENTED }
 
@@ -163,7 +171,14 @@ class SearchRepositoriesActivity : AppCompatActivity() {
             .distinctUntilChanged()
 
         lifecycleScope.launch {
-            pagingData.collectLatest(repoAdapter::submitData)
+            pagingData
+                .onEach {
+                    Log.d("Paging", """
+                        ------------------------ Paging Data Received ------------------------
+                        Emitting $it for query: ${uiState.value.query}
+                    """.trimIndent())
+                }
+                .collectLatest(repoAdapter::submitData)
         }
 
         lifecycleScope.launch {
@@ -206,3 +221,13 @@ class SearchRepositoriesActivity : AppCompatActivity() {
         }
     }
 }
+
+
+val LoadState.isLoading: Boolean
+    get() = this is LoadState.Loading
+
+val LoadStates.isLoading: Boolean
+    get() = refresh.isLoading || append.isLoading || prepend.isLoading
+
+val CombinedLoadStates.isLoading: Boolean
+    get() = source.isLoading || mediator?.isLoading == true
